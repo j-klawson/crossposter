@@ -1,17 +1,65 @@
 #!/usr/bin/env python3
 
+"""
+crosspost.py
+
+Cross-posting script for Mastodon and Bluesky.
+
+This script reads configuration from a JSON file (`config.json`) and secrets from
+an environment file (`config.env`) to post a single message to multiple configured
+Mastodon and Bluesky accounts.
+
+Usage:
+    ./crosspost.py "Your post content here with https://links.example"
+
+Requirements:
+    - Python 3.7+
+    - Mastodon.py
+    - atproto
+    - python-dotenv
+
+Features:
+    - Posts a single message to multiple Mastodon and Bluesky accounts.
+    - Enables/disables each platform via config.
+    - Supports account-specific credentials via environment variables.
+    - CLI interface for entering post content.
+
+Files:
+    - config.env: Contains secrets (tokens and app passwords).
+    - config.json: Contains account and platform configuration.
+    - config.example.json: Shareable version of config.json without secrets.
+
+Author:
+    Your Name or GitHub handle
+
+License:
+    MIT or your preferred license
+"""
+
 import os
 import json
 import argparse
 from mastodon import Mastodon
 from atproto import Client, models
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
+from datetime import datetime, timezone
 
-# === LOAD CONFIG ===
-load_dotenv("config.env")
+# Load .env
+dotenv_path = find_dotenv("config.env")
+if not dotenv_path or not load_dotenv(dotenv_path):
+    print("❌ Error: Could not find or load 'config.env'.")
+    sys.exit(1)
 
-with open("config.json") as f:
-    config = json.load(f)
+# Load config.json
+try:
+    with open("config.json") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    print("❌ Error: 'config.json' not found.")
+    sys.exit(1)
+except json.JSONDecodeError as e:
+    print(f"❌ Error parsing 'config.json': {e}")
+    sys.exit(1)
 
 # === PARSE CLI ===
 parser = argparse.ArgumentParser(description="Crosspost to Mastodon and Bluesky.")
@@ -46,13 +94,13 @@ def post_to_bluesky(text):
         try:
             client = Client()
             client.login(account["handle"], password)
-            client.send_post(models.AppBskyFeedPost.Main(
-                text=text,
-                created_at=models.get_iso_timestamp(),
-            ))
+
+            client.send_post(text)
+
             print(f"✅ Posted to Bluesky ({account['name']})")
         except Exception as e:
             print(f"❌ Error posting to Bluesky ({account['name']}): {e}")
+
 
 # === MAIN ===
 if __name__ == "__main__":
