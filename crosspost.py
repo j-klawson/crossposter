@@ -39,6 +39,7 @@ License:
 import os
 import json
 import argparse
+import re
 from mastodon import Mastodon
 from atproto import Client, models
 from dotenv import load_dotenv, find_dotenv
@@ -95,12 +96,26 @@ def post_to_bluesky(text):
             client = Client()
             client.login(account["handle"], password)
 
-            client.send_post(text)
+            # Find all URLs in the text
+            urls = re.findall(r'(https?://\S+)', text)
+            facets = []
+            for url in urls:
+                start = text.index(url)
+                end = start + len(url)
+                facet = models.AppBskyRichtextFacet.Main(
+                    features=[models.AppBskyRichtextFacet.Link(uri=url)],
+                    index=models.AppBskyRichtextFacet.ByteSlice(
+                        byteStart=start,
+                        byteEnd=end
+                    )
+                )
+                facets.append(facet)
+
+            client.send_post(text, facets=facets)
 
             print(f"✅ Posted to Bluesky ({account['name']})")
         except Exception as e:
             print(f"❌ Error posting to Bluesky ({account['name']}): {e}")
-
 
 # === MAIN ===
 if __name__ == "__main__":
