@@ -1,19 +1,20 @@
-# Crosspost: Post to Mastodon & Bluesky at the Same Time
+# Crosspost: Post to Mastodon, Bluesky & Twitter at the Same Time
 
-**Crosspost** is a simple Python CLI tool that lets you post the same message to multiple **Mastodon** and **Bluesky** accounts at once.
+**Crosspost** is a simple Python CLI tool that lets you post the same message to multiple **Mastodon**, **Bluesky**, and **Twitter** accounts at once.
 
 ---
 
 ## Features
 
-- Post to multiple Mastodon and Bluesky accounts
-- Enable/disable either service via config
+- Post to multiple Mastodon, Bluesky, and Twitter accounts
+- Enable/disable each service via config
 - Secure **macOS Keychain** credential storage (no passwords in files)
 - Single TOML config file (safe to commit to git, contains no secrets)
 - Interactive setup: `crosspost --setup`
 - CLI interface with support for links and Unicode
 - Auto-detects and formats URLs correctly for Bluesky using rich text "facets"
 - Configurable Keychain service name (defaults to "crosspost")
+- Twitter text posts with URL support
 
 ---
 
@@ -70,6 +71,14 @@ enabled = true
 name = "main"
 handle = "yourhandle.bsky.social"
 keychain_key = "bluesky_main"
+
+[twitter]
+enabled = true
+
+[[twitter.accounts]]
+name = "main"
+handle = "@yourhandle"
+keychain_key = "twitter_main"
 ```
 
 ### Keychain Setup
@@ -111,16 +120,45 @@ keychain_key = "mastodon_primary"
 
 Use your **app password**, not your account password. Generate one at https://bsky.app/settings/app-passwords
 
+### Twitter Setup
+
+To post to Twitter, you need OAuth 1.0a credentials from the Twitter Developer Portal:
+
+1. Visit https://developer.twitter.com/en/portal/dashboard
+2. Create or select an app
+3. Go to the "Keys and tokens" tab and generate/copy:
+   - **API Key** (consumer_key)
+   - **API Secret** (consumer_secret)
+   - **Access Token** (in the "Authentication Tokens" section)
+   - **Access Token Secret** (in the "Authentication Tokens" section)
+
+When you run `crosspost --setup`, you'll be prompted to enter all four credentials. They're stored securely in Keychain as a single JSON entry.
+
+Example Twitter config:
+
+```toml
+[twitter]
+enabled = true
+
+[[twitter.accounts]]
+name = "main"
+handle = "@yourhandle"
+keychain_key = "twitter_main"
+```
+
 ### Disable Platforms
 
-You can disable either service by setting `enabled = false`:
+You can disable any service by setting `enabled = false`:
 
 ```toml
 [mastodon]
-enabled = false
+enabled = true
 
 [bluesky]
 enabled = true
+
+[twitter]
+enabled = false
 ```
 
 ---
@@ -143,7 +181,7 @@ If `config.toml` is not found, crosspost will automatically create an example co
 🔐 Then run: crosspost --setup
 ```
 
-1. Edit the config with your Mastodon instances and Bluesky handles
+1. Edit the config with your Mastodon instances, Bluesky handles, and Twitter handles
 2. Run `crosspost --setup` to enter credentials into Keychain
 3. Run `crosspost "Your post text"` to start posting
 
@@ -157,6 +195,7 @@ If `config.toml` is not found, crosspost will automatically create an example co
 ✅ Posted to Mastodon (tech)
 ✅ Posted to Bluesky (main)
 ✅ Posted to Bluesky (alt)
+✅ Posted to Twitter (main)
 ```
 
 ---
@@ -180,7 +219,7 @@ src/crosspost/
 ├── __init__.py       # Package metadata and exports
 ├── cli.py            # Command-line interface
 ├── config.py         # Configuration file handling
-└── poster.py         # Mastodon and Bluesky posting logic
+└── poster.py         # Mastodon, Bluesky, and Twitter posting logic
 ```
 
 ---

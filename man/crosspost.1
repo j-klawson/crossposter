@@ -1,6 +1,6 @@
 .TH CROSSPOST 1 "November 2024" "crosspost 0.1.0" "User Commands"
 .SH NAME
-crosspost \- post simultaneously to Mastodon and Bluesky
+crosspost \- post simultaneously to Mastodon, Bluesky, and Twitter
 .SH SYNOPSIS
 .B crosspost
 .RI [ TEXT ]
@@ -9,11 +9,11 @@ crosspost \- post simultaneously to Mastodon and Bluesky
 .B --setup
 .SH DESCRIPTION
 .B crosspost
-is a command-line tool for cross-posting the same message to multiple Mastodon and Bluesky accounts at once.
+is a command-line tool for cross-posting the same message to multiple Mastodon, Bluesky, and Twitter accounts at once.
 .PP
 The tool reads account configuration from a
 .BR config.toml
-file and posts the provided text to all enabled accounts on both platforms.
+file and posts the provided text to all enabled accounts on all configured platforms.
 Credentials are stored securely in
 .B macOS Keychain
 \- no passwords are stored in configuration files.
@@ -88,6 +88,14 @@ enabled = true
 name = "main"
 handle = "yourhandle.bsky.social"
 keychain_key = "bluesky_main"
+
+[twitter]
+enabled = true
+
+[[twitter.accounts]]
+name = "main"
+handle = "@yourhandle"
+keychain_key = "twitter_main"
 .fi
 .PP
 Credentials are stored in Keychain under the service name
@@ -147,6 +155,11 @@ Post with special characters and spaces:
 .nf
 crosspost "I love Mastodon & Bluesky! 🎉"
 .fi
+.PP
+Post to all platforms including Twitter:
+.nf
+crosspost "Check out my blog! https://example.com/blog"
+.fi
 .SH FILES
 .TP
 .I config.toml
@@ -179,6 +192,24 @@ Requires an
 .nf
 https://bsky.app/settings/app-passwords
 .fi
+.SS Twitter
+Requires OAuth 1.0a User Context credentials from the Twitter Developer Portal:
+.IP 1.
+API Key (consumer_key)
+.IP 2.
+API Secret (consumer_secret)
+.IP 3.
+Access Token
+.IP 4.
+Access Token Secret
+.PP
+Get these from:
+.nf
+https://developer.twitter.com/en/portal/dashboard
+.fi
+.PP
+In your app's "Keys and tokens" tab. All four credentials are stored together in one Keychain entry and prompted for during
+.BR --setup .
 .SH NOTES
 .PP
 .B Bluesky URL Formatting:

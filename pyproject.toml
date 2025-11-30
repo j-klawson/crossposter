@@ -15,6 +15,7 @@ dependencies = [
     "atproto>=0.0.40",
     "tomli>=1.1.0; python_version < '3.11'",
     "keyring>=23.0.0",
+    "tweepy>=4.14.0",
 ]
 keywords = ["mastodon", "bluesky", "social-media", "crosspost"]
 classifiers = [

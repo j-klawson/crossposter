@@ -1,8 +1,9 @@
-"""Posting functionality for Mastodon and Bluesky."""
+"""Posting functionality for Mastodon, Bluesky, and Twitter."""
 
 import re
 from mastodon import Mastodon
 from atproto import Client, models
+import tweepy
 
 
 def post_to_mastodon(text, config):
@@ -69,3 +70,42 @@ def post_to_bluesky(text, config):
             print(f"✅ Posted to Bluesky ({account['name']})")
         except Exception as e:
             print(f"❌ Error posting to Bluesky ({account['name']}): {e}")
+
+
+def post_to_twitter(text, config):
+    """Post a message to configured Twitter accounts.
+
+    Args:
+        text (str): The post text
+        config (dict): Configuration dictionary with twitter account info
+    """
+    if not config.get("twitter", {}).get("enabled", False):
+        return
+
+    accounts = config.get("twitter", {}).get("accounts", [])
+    for account in accounts:
+        api_key = account.get("api_key")
+        api_secret = account.get("api_secret")
+        access_token = account.get("access_token")
+        access_token_secret = account.get("access_token_secret")
+
+        if not all([api_key, api_secret, access_token, access_token_secret]):
+            print(f"⚠️ Missing credentials for Twitter account '{account['name']}'")
+            continue
+
+        try:
+            # Use tweepy.Client for API v2 with OAuth 1.0a User Context
+            client = tweepy.Client(
+                consumer_key=api_key,
+                consumer_secret=api_secret,
+                access_token=access_token,
+                access_token_secret=access_token_secret
+            )
+
+            # Post the text (URLs work as-is, no special formatting needed)
+            client.create_tweet(text=text)
+            print(f"✅ Posted to Twitter ({account['name']})")
+        except tweepy.TweepyException as e:
+            print(f"❌ Error posting to Twitter ({account['name']}): {e}")
+        except Exception as e:
+            print(f"❌ Error posting to Twitter ({account['name']}): {e}")

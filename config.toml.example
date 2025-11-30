@@ -40,3 +40,16 @@ keychain_key = "bluesky_main"
 name = "alt"
 handle = "althandle.bsky.social"
 keychain_key = "bluesky_alt"
+
+[twitter]
+enabled = false
+
+# Define Twitter accounts to post to
+# Note: Requires API credentials (API Key, API Secret, Bearer Token)
+# Get these from: https://developer.twitter.com/en/portal/dashboard
+# All 3 credentials are stored together in one Keychain entry
+
+[[twitter.accounts]]
+name = "main"
+handle = "@yourhandle"
+keychain_key = "twitter_main"

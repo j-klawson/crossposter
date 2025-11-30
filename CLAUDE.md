@@ -15,13 +15,13 @@ python -m crosspost.cli "Your post text"
 
 ## Project Overview
 
-Crosspost is a Python package for cross-posting to multiple social media platforms (Mastodon and Bluesky) simultaneously. It's now properly packaged and installable via pip.
+Crosspost is a Python package for cross-posting to multiple social media platforms (Mastodon, Bluesky, and Twitter) simultaneously. It's properly packaged and installable via pip.
 
 ### Key Files
 
 - **src/crosspost/cli.py** - Entry point and CLI argument parsing
 - **src/crosspost/config.py** - Handles loading config.toml files
-- **src/crosspost/poster.py** - Contains posting logic for both platforms
+- **src/crosspost/poster.py** - Contains posting logic for Mastodon, Bluesky, and Twitter
 - **pyproject.toml** - Package metadata and build configuration
 - **README.md** - User-facing documentation
 - **man/crosspost.1** - Man page (groff format)
@@ -135,21 +135,24 @@ The man page (man/crosspost.1) is in groff format and covers:
 Currently, there are no automated tests. To test manually:
 
 ```bash
-# Test with both platforms enabled
+# Test with all platforms enabled
 crosspost "Test post https://example.com"
 
-# Test with only Mastodon (disable bluesky in config.toml)
-# Test with only Bluesky (disable mastodon in config.toml)
+# Test with individual platforms (disable others in config.toml)
+# Test with only Mastodon (set bluesky/twitter enabled = false)
+# Test with only Bluesky (set mastodon/twitter enabled = false)
+# Test with only Twitter (set mastodon/bluesky enabled = false)
 ```
 
 ## Known Issues & TODOs
 
-- [ ] Add unit tests
-- [ ] Handle multiple URLs in a single post more robustly (current implementation uses first occurrence)
-- [ ] Add support for media attachments
+- [ ] Add unit tests for all three platforms
+- [ ] Handle multiple URLs in a single post more robustly (Bluesky regex approach)
+- [ ] Add support for media attachments (for Mastodon, Bluesky, Twitter)
 - [ ] Add verbose/debug logging flag
 - [ ] Add config validation/schema
 - [ ] Publish to PyPI
+- [ ] Add Twitter thread support (reply chains)
 
 ## Future Enhancements
 
@@ -158,6 +161,8 @@ crosspost "Test post https://example.com"
 - Rich text formatting (bold, italic, links)
 - Media uploads
 - Batch posting from file
+- Repost/RT to Twitter
+- Hashtag and mention detection/expansion
 
 ## Publishing to PyPI
 
@@ -177,7 +182,8 @@ python -m twine upload dist/*
 
 - **Mastodon.py** >= 1.8.0 - Mastodon API client
 - **atproto** >= 0.0.40 - Bluesky/ATProto client
-- **python-dotenv** >= 1.0.0 - Environment variable loading
+- **tweepy** >= 4.14.0 - Twitter API v2 client
+- **keyring** >= 23.0.0 - macOS Keychain credential storage
 
 ## Architecture Notes
 
@@ -201,6 +207,69 @@ This is why the README mentions "Auto-detects and formats URLs correctly for Blu
 ### Caveat
 
 If the same URL appears multiple times in a post, the current regex approach may have issues. This is a known limitation (see TODOs).
+
+## Twitter Integration
+
+### Credentials Storage
+
+Twitter credentials are different from Mastodon and Bluesky because they require **four separate values** instead of just one token/password. These are OAuth 1.0a User Context credentials:
+
+1. **API Key** (consumer_key)
+2. **API Secret** (consumer_secret)
+3. **Access Token**
+4. **Access Token Secret**
+
+All four are stored together as JSON in a single Keychain entry:
+
+```json
+{
+  "api_key": "...",
+  "api_secret": "...",
+  "access_token": "...",
+  "access_token_secret": "..."
+}
+```
+
+### Setup Process
+
+During `crosspost --setup`, when a Twitter account is encountered:
+1. User is prompted to enter the 4 credentials (each with hidden input)
+2. They're packaged as JSON
+3. Stored in Keychain as a single entry (e.g., `crosspost/twitter_main`)
+
+### Config Format
+
+Twitter config follows the same pattern as other platforms:
+
+```toml
+[twitter]
+enabled = true
+
+[[twitter.accounts]]
+name = "main"
+handle = "@yourhandle"
+keychain_key = "twitter_main"
+```
+
+### Implementation Details
+
+- **Library**: `tweepy>=4.14.0` (Twitter API v2 client)
+- **File**: `src/crosspost/poster.py`
+- **Function**: `post_to_twitter(text, config)` - Posts text to configured Twitter accounts
+- **Credential parsing**: Done in `load_config()` in `config.py`
+  - `_prompt_for_twitter_credentials()` - Interactive prompting for all 3 credentials
+  - JSON parsing in `load_config()` extracts api_key, api_secret, bearer_token to account dict
+
+### API Rate Limits
+
+Twitter API v2 has rate limits. The implementation:
+- Catches `tweepy.TweepyException` for auth/API errors
+- Provides user-friendly error messages
+- Continues to next account on failure (doesn't exit)
+
+### Text Posting Only
+
+Current implementation posts text only - no media attachments. URLs are included as plain text (Twitter handles URL detection automatically).
 
 ## Local Development Tips
 
@@ -232,3 +301,4 @@ If the same URL appears multiple times in a post, the current regex approach may
 - Check that the instance URL is correct and ends with https://
 - Ensure the token hasn't expired or been revoked
 - do not attempt to do git commits or write commit messages. I will do them manually.
+- Never modify ~/.config/crosspost/config.toml
