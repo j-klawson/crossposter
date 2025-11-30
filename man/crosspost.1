@@ -1,0 +1,196 @@
+.TH CROSSPOST 1 "November 2024" "crosspost 0.1.0" "User Commands"
+.SH NAME
+crosspost \- post simultaneously to Mastodon and Bluesky
+.SH SYNOPSIS
+.B crosspost
+.I TEXT
+.SH DESCRIPTION
+.B crosspost
+is a command-line tool for cross-posting the same message to multiple Mastodon and Bluesky accounts at once.
+.PP
+The tool reads account configuration from a
+.BR config.toml
+file and posts the provided text to all enabled accounts on both platforms.
+On first run, if no config file exists, an example will be automatically created at
+.I ~/.config/crosspost/config.toml
+for you to edit.
+.PP
+URLs in the post text are automatically detected and formatted as rich text facets for Bluesky compatibility.
+.SH ARGUMENTS
+.TP
+.I TEXT
+The post content to share. Surround in quotes if it contains spaces or URLs.
+.PP
+Example:
+.nf
+crosspost "Check out my new article! https://example.com/blog"
+.fi
+.SH CONFIGURATION
+.B crosspost
+reads a
+.BR config.toml
+file from one of these locations (in order of preference):
+.IP 1.
+Current working directory
+.IP 2.
+.I ~/.config/crosspost/config.toml
+.IP 3.
+Auto-created at
+.I ~/.config/crosspost/config.toml
+on first run if neither location exists
+.PP
+The configuration file must contain account definitions for Mastodon and/or Bluesky.
+Refer to the
+.BR config.toml.example
+template for the full syntax.
+.SS First Run
+On first run without a config file,
+.B crosspost
+will automatically:
+.IP 1.
+Create the
+.I ~/.config/crosspost/
+directory (if it doesn't exist)
+.IP 2.
+Generate
+.I config.toml
+with example accounts and settings
+.IP 3.
+Print a message asking you to edit the file with your credentials
+.PP
+After editing the config with your tokens and passwords, simply run
+.B crosspost
+again to start posting.
+.SS Basic Configuration Example
+.nf
+[mastodon]
+enabled = true
+
+[[mastodon.accounts]]
+name = "primary"
+instance = "https://mastodon.social"
+token = "your_token_here"
+
+[bluesky]
+enabled = true
+
+[[bluesky.accounts]]
+name = "main"
+handle = "yourhandle.bsky.social"
+password = "your_app_password"
+.fi
+.SS Using Environment Variables
+Credentials can reference environment variables instead of being inlined:
+.nf
+[[mastodon.accounts]]
+name = "primary"
+instance = "https://mastodon.social"
+token = { env = "MASTODON_TOKEN" }
+
+[[bluesky.accounts]]
+name = "main"
+handle = "yourhandle.bsky.social"
+password = { env = "BLUESKY_PASS" }
+.fi
+.PP
+Then set the environment variables before running:
+.nf
+export MASTODON_TOKEN="your_token"
+export BLUESKY_PASS="your_app_password"
+crosspost "Your post text"
+.fi
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display help message and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+All posts were sent successfully (or skipped if platforms were disabled).
+.TP
+.B 1
+Configuration error (missing or invalid config.toml) or posting failed.
+.SH EXAMPLES
+Post to all configured accounts:
+.nf
+crosspost "Hello world!"
+.fi
+.PP
+Post a link:
+.nf
+crosspost "Check out https://example.com"
+.fi
+.PP
+Post with special characters and spaces:
+.nf
+crosspost "I love Mastodon & Bluesky! 🎉"
+.fi
+.SH FILES
+.TP
+.I config.toml
+Main configuration file containing account definitions and credentials.
+Located in the current directory or at
+.I ~/.config/crosspost/config.toml
+(XDG-compliant).
+Auto-created on first run if not found.
+Should be kept in
+.IR .gitignore
+to prevent accidental credential leaks.
+.TP
+.I config.toml.example
+Template configuration file with examples (shipped with package).
+.SH ENVIRONMENT
+Environment variables can be used to store sensitive credentials. If a credential is defined as
+.IR { env = "VAR_NAME" }
+in the config file, the value will be read from the environment variable
+.IR VAR_NAME
+at runtime.
+.SH CREDENTIALS
+.SS Mastodon
+Requires an API token with permission to post. Generate one at your Mastodon instance's
+.I Settings > Development > New Application
+page.
+.SS Bluesky
+Requires an
+.I app password
+(not your account password). Generate one at:
+.nf
+https://bsky.app/settings/app-passwords
+.fi
+.SH NOTES
+.PP
+.B Bluesky URL Formatting:
+URLs are automatically detected using regex pattern
+.I https?://\eS+
+and converted to rich text facets for proper rendering on Bluesky.
+.PP
+.B Multiple Accounts:
+You can configure multiple accounts for each platform. All enabled accounts will receive the same post.
+.PP
+.B Disabling Platforms:
+Set
+.I enabled = false
+in the config file to temporarily disable posting to a specific platform:
+.nf
+[mastodon]
+enabled = false
+
+[bluesky]
+enabled = true
+.fi
+.SH BUGS
+If a post contains the same URL multiple times, only the first occurrence will be properly formatted as a Bluesky facet. This is a known limitation.
+.PP
+For bug reports and feature requests, visit:
+.nf
+https://github.com/j-klawson/crosspost/issues
+.fi
+.SH AUTHOR
+Keith Lawson
+.SH SEE ALSO
+.BR config.toml (5)
+.PP
+For more information and examples, see the project README at:
+.nf
+https://github.com/j-klawson/crosspost
+.fi

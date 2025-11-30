@@ -1,0 +1,42 @@
+# Crosspost Configuration
+# Copy this file to config.toml and fill in your credentials
+# Keep config.toml in .gitignore - never commit it!
+
+[mastodon]
+enabled = true
+
+# Define Mastodon accounts to post to
+[[mastodon.accounts]]
+name = "primary"
+instance = "https://mastodon.social"
+# Inline the token directly:
+token = "your_mastodon_token_here"
+
+# Or reference an environment variable:
+# token = { env = "MASTODON_TOKEN_1" }
+
+[[mastodon.accounts]]
+name = "fosstodon"
+instance = "https://fosstodon.org"
+token = "your_second_token_here"
+
+[bluesky]
+enabled = true
+
+# Define Bluesky accounts to post to
+# Note: Use your Bluesky app password, NOT your account password
+# Generate at: https://bsky.app/settings/app-passwords
+
+[[bluesky.accounts]]
+name = "main"
+handle = "yourhandle.bsky.social"
+# Inline the password directly:
+password = "xxxx-xxxx-xxxx-xxxx"
+
+# Or reference an environment variable:
+# password = { env = "BLUESKY_PASS_1" }
+
+[[bluesky.accounts]]
+name = "alt"
+handle = "althandle.bsky.social"
+password = "yyyy-yyyy-yyyy-yyyy"

@@ -1,2 +1,29 @@
-config.json
-config.env
+# Configuration
+config.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Environment
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
