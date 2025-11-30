@@ -28,6 +28,12 @@ Crosspost is a Python package for cross-posting to multiple social media platfor
 
 ## Configuration
 
+### Credential Storage with Keychain
+
+All credentials are stored securely in **macOS Keychain** via the `keyring` library. The config file contains only account definitions (names, instances, handles) - never credentials.
+
+### Config File Location
+
 The app looks for `config.toml` in this order:
 1. Current working directory (highest priority)
 2. `~/.config/crosspost/config.toml` (XDG-compliant)
@@ -38,29 +44,25 @@ The app looks for `config.toml` in this order:
 The first time you run `crosspost`, if no config file exists, it will:
 1. Create `~/.config/crosspost/` directory
 2. Create `config.toml` with example accounts
-3. Print a message asking you to edit it with your credentials
+3. Print instructions to run `crosspost --setup`
 
-This gives new users a clean onboarding experience without having to copy example files manually.
+This gives new users a clean onboarding experience.
 
 ### Config Format
 
-All configuration is in a single TOML file (`config.toml`). Credentials can be:
-- Inlined directly in the config
-- Referenced via environment variables for extra security
-
-Example:
+All configuration is in a single TOML file (`config.toml`). No credentials are stored here - only account definitions:
 
 ```toml
+# Optional: customize Keychain service name (defaults to "crosspost")
+keychain_service = "crosspost"
+
 [mastodon]
 enabled = true
 
 [[mastodon.accounts]]
 name = "primary"
 instance = "https://mastodon.social"
-# Inline token directly
-token = "your_token_here"
-# OR use environment variable
-# token = { env = "MASTODON_TOKEN" }
+keychain_key = "mastodon_primary"
 
 [bluesky]
 enabled = true
@@ -68,10 +70,50 @@ enabled = true
 [[bluesky.accounts]]
 name = "main"
 handle = "yourhandle.bsky.social"
-password = "your_app_password"
+keychain_key = "bluesky_main"
 ```
 
-Note: Bluesky uses app passwords (not the regular account password). Generate these at https://bsky.app/settings/app-passwords
+### Keychain Setup
+
+Two ways to populate Keychain:
+
+1. **Recommended: Interactive setup**
+   ```bash
+   crosspost --setup
+   ```
+   Prompts for each account's credential and stores securely in Keychain.
+
+2. **On first post**
+   ```bash
+   crosspost "Your post text"
+   ```
+   Missing credentials trigger interactive prompt (hidden input) and are stored in Keychain.
+
+### Keychain Service Names
+
+Credentials are stored with structure: `service/keychain_key`
+
+By default, service = `"crosspost"` (customizable with `keychain_service` config key)
+
+Example: `crosspost/mastodon_primary`, `crosspost/bluesky_main`
+
+### Implementation Details
+
+- **File**: `src/crosspost/config.py`
+- `_get_from_keychain(service, key)` - Retrieves from Keychain
+- `_prompt_for_credential(prompt_text)` - Hidden input via `getpass`
+- `_resolve_credential()` - Handles lookup, prompting, and caching
+- `setup_keychain(config)` - Interactive setup for all accounts
+- `_credential_cache` - In-memory cache during execution (avoids repeated Keychain lookups)
+
+### Error Handling
+
+- If keyring library not found: hard fail with install instructions
+- If credential missing: prompt user (hidden input), then store in Keychain
+- If user cancels (Ctrl+C): skip that account, warn user
+- All exceptions caught with user-friendly messages
+
+Note: Bluesky requires app passwords, not account passwords. Generate at https://bsky.app/settings/app-passwords
 
 ## Man Page
 

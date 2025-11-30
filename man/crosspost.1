@@ -3,7 +3,10 @@
 crosspost \- post simultaneously to Mastodon and Bluesky
 .SH SYNOPSIS
 .B crosspost
-.I TEXT
+.RI [ TEXT ]
+.PP
+.B crosspost
+.B --setup
 .SH DESCRIPTION
 .B crosspost
 is a command-line tool for cross-posting the same message to multiple Mastodon and Bluesky accounts at once.
@@ -11,6 +14,10 @@ is a command-line tool for cross-posting the same message to multiple Mastodon a
 The tool reads account configuration from a
 .BR config.toml
 file and posts the provided text to all enabled accounts on both platforms.
+Credentials are stored securely in
+.B macOS Keychain
+\- no passwords are stored in configuration files.
+.PP
 On first run, if no config file exists, an example will be automatically created at
 .I ~/.config/crosspost/config.toml
 for you to edit.
@@ -19,7 +26,9 @@ URLs in the post text are automatically detected and formatted as rich text face
 .SH ARGUMENTS
 .TP
 .I TEXT
-The post content to share. Surround in quotes if it contains spaces or URLs.
+The post content to share. Required for posting (not needed with
+.BR \-\-setup ).
+Surround in quotes if it contains spaces or URLs.
 .PP
 Example:
 .nf
@@ -62,6 +71,7 @@ After editing the config with your tokens and passwords, simply run
 .B crosspost
 again to start posting.
 .SS Basic Configuration Example
+Config file contains only account definitions (no credentials):
 .nf
 [mastodon]
 enabled = true
@@ -69,7 +79,7 @@ enabled = true
 [[mastodon.accounts]]
 name = "primary"
 instance = "https://mastodon.social"
-token = "your_token_here"
+keychain_key = "mastodon_primary"
 
 [bluesky]
 enabled = true
@@ -77,40 +87,52 @@ enabled = true
 [[bluesky.accounts]]
 name = "main"
 handle = "yourhandle.bsky.social"
-password = "your_app_password"
-.fi
-.SS Using Environment Variables
-Credentials can reference environment variables instead of being inlined:
-.nf
-[[mastodon.accounts]]
-name = "primary"
-instance = "https://mastodon.social"
-token = { env = "MASTODON_TOKEN" }
-
-[[bluesky.accounts]]
-name = "main"
-handle = "yourhandle.bsky.social"
-password = { env = "BLUESKY_PASS" }
+keychain_key = "bluesky_main"
 .fi
 .PP
-Then set the environment variables before running:
+Credentials are stored in Keychain under the service name
+.BR "crosspost"
+(customizable with the optional
+.IR keychain_service
+config key).
+.SS Keychain Setup
+Use the
+.B --setup
+command to interactively enter credentials:
 .nf
-export MASTODON_TOKEN="your_token"
-export BLUESKY_PASS="your_app_password"
+crosspost --setup
+.fi
+.PP
+This prompts you for each account's credential and stores them securely in Keychain.
+.PP
+Alternatively, credentials can be provided on first run:
+.nf
 crosspost "Your post text"
 .fi
+.PP
+If any credential is missing from Keychain, you'll be prompted to enter it (hidden input).
 .SH OPTIONS
+.TP
+.BR \-\-setup
+Set up Keychain credentials interactively. Prompts for all configured account credentials and stores them securely. Does not post anything.
 .TP
 .BR \-h ", " \-\-help
 Display help message and exit.
 .SH EXIT STATUS
 .TP
 .B 0
-All posts were sent successfully (or skipped if platforms were disabled).
+All posts were sent successfully (or skipped if platforms were disabled), or
+.B --setup
+completed successfully.
 .TP
 .B 1
-Configuration error (missing or invalid config.toml) or posting failed.
+Configuration error (missing or invalid config.toml), posting failed, or required text argument not provided.
 .SH EXAMPLES
+Set up Keychain credentials:
+.nf
+crosspost --setup
+.fi
+.PP
 Post to all configured accounts:
 .nf
 crosspost "Hello world!"

@@ -2,18 +2,18 @@
 
 **Crosspost** is a simple Python CLI tool that lets you post the same message to multiple **Mastodon** and **Bluesky** accounts at once.
 
-Ideal for developers, bloggers, or bots who want to reach both networks without copy-pasting.
-
 ---
 
 ## Features
 
 - Post to multiple Mastodon and Bluesky accounts
 - Enable/disable either service via config
-- Single TOML config file (easy to maintain, all-in-one)
+- Secure **macOS Keychain** credential storage (no passwords in files)
+- Single TOML config file (safe to commit to git, contains no secrets)
+- Interactive setup: `crosspost --setup`
 - CLI interface with support for links and Unicode
 - Auto-detects and formats URLs correctly for Bluesky using rich text "facets"
-- Supports both inline credentials and environment variable references
+- Configurable Keychain service name (defaults to "crosspost")
 
 ---
 
@@ -42,13 +42,17 @@ Ideal for developers, bloggers, or bots who want to reach both networks without 
 
 ## Configuration
 
+### Overview
+
+Crosspost uses **macOS Keychain** to store credentials securely. No passwords are ever stored in config files or shell history.
+
+Your `config.toml` contains only account definitions (names, instances, handles) - not credentials.
+
 ### Configuration File
 
-Create a `config.toml` file with your accounts and credentials. See `config.toml.example` for a template.
+Create a `config.toml` file with your accounts. See `config.toml.example` for a template.
 
-**Important**: Keep `config.toml` in `.gitignore` and never commit it - it contains secrets!
-
-### Basic Example
+Safe to commit to git (contains no secrets):
 
 ```toml
 [mastodon]
@@ -57,7 +61,7 @@ enabled = true
 [[mastodon.accounts]]
 name = "primary"
 instance = "https://mastodon.social"
-token = "your_token_here"
+keychain_key = "mastodon_primary"
 
 [bluesky]
 enabled = true
@@ -65,32 +69,47 @@ enabled = true
 [[bluesky.accounts]]
 name = "main"
 handle = "yourhandle.bsky.social"
-password = "your_app_password_here"
+keychain_key = "bluesky_main"
 ```
 
-### Using Environment Variables
+### Keychain Setup
 
-For added security, you can reference environment variables instead of inline secrets:
+Two options to store credentials in Keychain:
+
+**Option 1: Interactive Setup (Recommended)**
+
+```bash
+crosspost --setup
+```
+
+This prompts you to enter credentials for all configured accounts and stores them securely in Keychain.
+
+**Option 2: On First Run**
+
+Simply run:
+
+```bash
+crosspost "Your post text"
+```
+
+If a credential is missing from Keychain, you'll be prompted to enter it. It's then stored automatically.
+
+### Custom Keychain Service Name
+
+By default, credentials are stored under the service name `"crosspost"`. To use a different service name:
 
 ```toml
+keychain_service = "my-custom-service"
+
 [[mastodon.accounts]]
 name = "primary"
 instance = "https://mastodon.social"
-token = { env = "MASTODON_TOKEN" }
-
-[[bluesky.accounts]]
-name = "main"
-handle = "yourhandle.bsky.social"
-password = { env = "BLUESKY_PASS" }
+keychain_key = "mastodon_primary"
 ```
 
-Then set the environment variables before running:
+### Bluesky Note
 
-```bash
-export MASTODON_TOKEN="your_token"
-export BLUESKY_PASS="your_app_password"
-crosspost "Your post text"
-```
+Use your **app password**, not your account password. Generate one at https://bsky.app/settings/app-passwords
 
 ### Disable Platforms
 
@@ -103,10 +122,6 @@ enabled = false
 [bluesky]
 enabled = true
 ```
-
-### Bluesky Note
-
-Use your **app password**, not your account password. Generate one at https://bsky.app/settings/app-passwords
 
 ---
 
@@ -124,10 +139,13 @@ If `config.toml` is not found, crosspost will automatically create an example co
 
 ```
 ✨ Created example config at ~/.config/crosspost/config.toml
-📝 Please edit it with your credentials and run crosspost again
+📝 Please edit it with your account details
+🔐 Then run: crosspost --setup
 ```
 
-Edit the file with your Mastodon tokens and Bluesky app passwords, then run the command again.
+1. Edit the config with your Mastodon instances and Bluesky handles
+2. Run `crosspost --setup` to enter credentials into Keychain
+3. Run `crosspost "Your post text"` to start posting
 
 
 ---
